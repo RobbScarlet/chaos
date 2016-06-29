@@ -30,6 +30,6 @@ func main() {
     fmt.Println(dao.GetService("zs-service"))
     fmt.Println(dao.AddService(service2, "replace"))
     fmt.Println(dao.GetService("zs-service"))
-    fmt.Println(dao.DeleteService("zhaoshang-service"))
-    fmt.Println(dao.GetService("zs-service"))
+    //fmt.Println(dao.DeleteService("zhaoshang-service"))
+    //fmt.Println(dao.GetService("zs-service"))
 }
