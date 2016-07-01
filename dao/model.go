@@ -1,7 +1,7 @@
 package dao
 
 //
-// 服务的基本信息
+//  服务的基本信息
 //
 type Service struct {
     // 服务名称(唯一性)
@@ -10,6 +10,10 @@ type Service struct {
     FullName        string              `json:"fullName,omitempty"`
     // 服务别名
     Alias           string              `json:"alias,omitempty"`
+    // Docker中的名称
+    DockerName      string              `json:"dockerName,omitempty"`
+    // 服务所属的命名空间
+    Namespace       string              `json:"namespace,omitempty"`
     // 服务类型(Thrift, Mysql, NodeJS, Http等)
     Type            string              `json:"type,omitempty"`
     // 服务种类(基础服务Base,应用服务Application)
@@ -31,15 +35,32 @@ type Service struct {
     GitAddress      string              `json:"gitAddress,omitempty"`
     // GitId
     GitId           string              `json:"gitId,omitempty"`
+    // 项目代码所在目录
+    ProjectDir      string              `json:"projectDir,omitempty"`
     // 如果接入Loom并提供服务
     LoomId          string              `json:"loomId,omitempty"`
 }
 //
-// 服务的调用关系信息
+//  服务基本信息列表
+//
+type ServiceList struct{
+    serviceList     []Service           `json:"serviceList,omitempty"`
+}
+//
+//  服务的调用关系信息
 //
 type ServiceLink struct {
     // 服务调用者名称
-    Source          string
+    Source          string              `json:"source,omitempty"`
     // 服务被调用者名称
-    Target          string
+    Target          string              `json:"target,omitempty"`
+}
+//
+//  服务的调用关系列表
+//
+type ServiceLinkList struct {
+    // 服务调用者名称
+    Source          string              `json:"source,omitempty"`
+    // 服务被调用者名称列表
+    TargetList      []string            `json:"targetList,omitempty"`
 }

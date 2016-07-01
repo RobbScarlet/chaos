@@ -30,6 +30,11 @@
 			"Rev": "1f9a0ee00ff93717a275e15b30cf7df356255877"
 		},
 		{
+			"ImportPath": "github.com/emicklei/go-restful/swagger",
+			"Comment": "v1.1.3-98-g1f9a0ee",
+			"Rev": "1f9a0ee00ff93717a275e15b30cf7df356255877"
+		},
+		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
 			"Rev": "58bbd41c1a2d1b7154f5d99a8d0d839b3093301a"
 		},

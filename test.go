@@ -9,27 +9,66 @@ import (
 )
 
 func main() {
+    //initServiceAndLink()
+    fmt.Println(dao.GetServiceLinkSource("D"))
+    fmt.Println(dao.GetServiceLinkTarget("A"))
+    fmt.Println(dao.GetServiceLinkBoth("B"))
+}
+
+func initServiceAndLink(){
     err := graph.InitQuadStore("bolt", config.Bolt_DB_Path, nil)
     fmt.Println(err)
 
-    service1 := dao.Service{
-        Name: "zs-service",
+    A := &dao.Service{
+        Name: "A",
         Category: "Application",
-        FullName: "zs-thrift-service1",
+        Description: "Service-A",
+    }
+    B := &dao.Service{
+        Name: "B",
+        Category: "Application",
+        Description: "Service-B",
+    }
+    C := &dao.Service{
+        Name: "C",
+        Category: "Base",
+        Description: "Service-C",
+    }
+    D := &dao.Service{
+        Name: "D",
+        Category: "Application",
+        Description: "Service-D",
+    }
+    E := &dao.Service{
+        Name: "E",
+        Category: "Application",
+        Description: "Service-E",
+    }
+    F := &dao.Service{
+        Name: "F",
+        Category: "Base",
+        Description: "Service-F",
+    }
+    ABEF := &dao.ServiceLinkList{
+        Source: "A",
+        TargetList: []string{"B", "E", "F"},
+    }
+    BCD := &dao.ServiceLinkList{
+        Source: "B",
+        TargetList: []string{"C", "D"},
+    }
+    ED := &dao.ServiceLink{
+        Source: "E",
+        Target: "D",
     }
 
-    service2 := dao.Service{
-        Name: "zs-service",
-        Category: "Application",
-        FullName: "zs-thrift-service2",
-    }
-
-    fmt.Println(dao.AddService(service1, "replace"))
-    fmt.Println(dao.GetService("zs-service"))
-    fmt.Println(dao.AddService(service2, "ingore"))
-    fmt.Println(dao.GetService("zs-service"))
-    fmt.Println(dao.AddService(service2, "replace"))
-    fmt.Println(dao.GetService("zs-service"))
-    //fmt.Println(dao.DeleteService("zhaoshang-service"))
-    //fmt.Println(dao.GetService("zs-service"))
+    fmt.Println(dao.AddService(*A, "ignore"))
+    fmt.Println(dao.AddService(*B, "ignore"))
+    fmt.Println(dao.AddService(*C, "ignore"))
+    fmt.Println(dao.AddService(*D, "ignore"))
+    fmt.Println(dao.AddService(*E, "ignore"))
+    fmt.Println(dao.AddService(*F, "ignore"))
+    fmt.Println(dao.AddServiceLinkList(*ABEF))
+    fmt.Println(dao.AddServiceLinkList(*BCD))
+    fmt.Println(dao.AddServiceLink(*ED))
 }
