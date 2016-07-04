@@ -75,17 +75,58 @@ func GetService(serviceName string)(service *Service, err error){
 }
 
 //
-// GetService 查询所有的服务
+// GetServiceList 根据服务名列表获取服务的基本信息列表
 //
-//func GetAllService()(service []Service, err error){
-//    handle, err := cayley.NewGraph("bolt", config.Bolt_DB_Path, nil)
-//    if err != nil{
-//        return
-//    }
-//    defer handle.Close()
+func GetServiceList(serviceNameList []string)(serviceList []Service, err error){
+    handle, err := cayley.NewGraph("bolt", config.Bolt_DB_Path, nil)
+    if err != nil{
+        return
+    }
+    defer handle.Close()
+
+    serviceList = make([]Service, 0)
+    if len(serviceNameList) == 0{
+        err = ServiceNameListIsNil
+        return
+    }
+    it := path.StartPath(handle.QuadStore, serviceNameList...).Out(ServiceInfoPre).BuildIterator()
+    for graph.Next(it){ // 循环获取所有的服务信息JSON
+        serviceJson := handle.QuadStore.NameOf(it.Result())
+        service := &Service{}
+        err = ffjson.Unmarshal([]byte(serviceJson), service)
+        if err != nil{
+            serviceList = make([]Service, 0)
+            return
+        }
+        serviceList = append(serviceList, *service)
+    }
+    return
+}
+
 //
+//  GetAllService 查询所有的服务
 //
-//}
+func GetAllService()(serviceList []Service, err error){
+    serviceList = make([]Service, 0)
+    handle, err := cayley.NewGraph("bolt", config.Bolt_DB_Path, nil)
+    if err != nil{
+        return
+    }
+    defer handle.Close()
+
+    it := path.StartPath(handle.QuadStore).Out(ServiceInfoPre).BuildIterator()
+    for graph.Next(it){
+        serviceJson := handle.QuadStore.NameOf(it.Result())
+        service := &Service{}
+        err = ffjson.Unmarshal([]byte(serviceJson), service)
+        if err != nil{
+            serviceList = make([]Service, 0)
+            return
+        }
+        serviceList = append(serviceList, *service)
+    }
+    return
+}
 
 //
 // DeleteService 删除服务信息
@@ -141,11 +182,12 @@ func AddServiceLink(serviceLink ServiceLink)(err error){
 }
 
 //
-//  AddServiceLink 添加服务调用关系列表
-//
-func AddServiceLinkList(serviceLinkList ServiceLinkList)(err error){
-    quads, err := convertServiceLinkListToQuads(serviceLinkList)
-    if err != nil{
+//  GetServiceLink 获取服务的调用关系
+//  linkType:source=调用该服务的所有服务,target=该服务调用的所有服务,both=source+target
+func GetServiceLink(serviceName, linkType string)(serviceLinkList []ServiceLink, err error){
+    serviceLinkList = make([]ServiceLink, 0)
+    if serviceName == ""{
+        err = ServiceNameIsNil
         return
     }
 
@@ -154,15 +196,65 @@ func AddServiceLinkList(serviceLinkList ServiceLinkList)(err error){
         return
     }
     defer handle.Close()
-    // TODO 增加事务
-    for _, quad := range quads{
-        err = handle.QuadWriter.AddQuad(quad)
-        if err == graph.ErrQuadExists{
-            continue
-        }else{
-            return
+
+    if linkType == "source"{
+        serviceLinkList = getServiceLinkSource(serviceName, handle.QuadStore, serviceLinkList)
+    }else if linkType == "target"{
+        serviceLinkList = getServiceLinkTarget(serviceName, handle.QuadStore, serviceLinkList)
+    }else if linkType == "both"{
+        // source
+        serviceLinkList = getServiceLinkSource(serviceName, handle.QuadStore, serviceLinkList)
+        // target
+        serviceLinkList = getServiceLinkTarget(serviceName, handle.QuadStore, serviceLinkList)
+    }
+    return
+}
+
+func GetServiceAndServiceLink(serviceName, linkType string)(serviceAndServiceLink *ServiceAndServiceLink, err error){
+    serviceNameList := make([]string, 0)
+    serviceNameMap := make(map[string]string)
+    serviceLinkList := make([]ServiceLink, 0)
+
+    if serviceName == ""{
+        err = ServiceNameIsNil
+        return
+    }
+
+    handle, err := cayley.NewGraph("bolt", config.Bolt_DB_Path, nil)
+    if err != nil{
+        return
+    }
+    defer handle.Close()
+    // 服务调用关系
+    if linkType == "source"{
+        serviceLinkList = getServiceLinkSource(serviceName, handle.QuadStore, serviceLinkList)
+    }else if linkType == "target"{
+        serviceLinkList = getServiceLinkTarget(serviceName, handle.QuadStore, serviceLinkList)
+    }else if linkType == "both"{
+        // source
+        serviceLinkList = getServiceLinkSource(serviceName, handle.QuadStore, serviceLinkList)
+        // target
+        serviceLinkList = getServiceLinkTarget(serviceName, handle.QuadStore, serviceLinkList)
+    }
+    // 服务的基本信息
+    serviceNameList = append(serviceNameList, serviceName)
+    serviceNameMap[serviceName] = serviceName
+    for _, serviceLink := range serviceLinkList{
+        if serviceNameMap[serviceLink.Source] == ""{
+            serviceNameList = append(serviceNameList, serviceLink.Source)
+            serviceNameMap[serviceLink.Source] = serviceLink.Source
+        }
+        if serviceNameMap[serviceLink.Target] == ""{
+            serviceNameList = append(serviceNameList, serviceLink.Target)
+            serviceNameMap[serviceLink.Target] = serviceLink.Target
         }
     }
+    serviceList, err := getServiceListByNameList(serviceNameList, handle.QuadStore)
+    if err != nil{
+        return
+    }
+    // 服务的基本信息列表和服务调用关系列表
+    serviceAndServiceLink = &ServiceAndServiceLink{serviceList, serviceLinkList}
 
     return
 }
@@ -186,88 +278,119 @@ func DeleteServiceLink(serviceLink ServiceLink)(err error){
 }
 
 //
-//  GetServiceLinkTarget 获取所有被当前服务调用的服务
-//
-func GetServiceLinkTarget(serviceName string)(serviceLinkList []ServiceLink, err error){
-    if serviceName == ""{
-        err = errors.New("查询服务调用关系的服务名称不能为空")
-        return
-    }
+//  GetServiceTree 获取该服务的调用关系树,linkType表示调用以serviceName为根,寻找调用该服务和被该服务调用的树
+//  linkType:source=调用该服务;target=被该服务调用
+func GetServiceTree(serviceName, linkType string)(serviceTree *ServiceTree, err error){
     handle, err := cayley.NewGraph("bolt", config.Bolt_DB_Path, nil)
     if err != nil{
         return
     }
     defer handle.Close()
+    // 根节点调用信息
+    rootNode := &ServiceTreeNode{ServiceName: serviceName}
+    // 树形调用结构中的所有服务
+    serviceNameMap := make(map[string]string)
+    // 子调用
+    rootNode.LinkNodeList = getServiceLinkNode(serviceName, handle.QuadStore, serviceNameMap, linkType)
+    // 所有的服务基本信息
+    serviceNameList := make([]string, 0)
+    for _, serviceName := range serviceNameMap{
+        serviceNameList = append(serviceNameList, serviceName)
+    }
+    serviceList, err := getServiceListByNameList(serviceNameList, handle.QuadStore)
+    if err != nil{
+        return
+    }
 
-    serviceLinkList = make([]ServiceLink, 0)
-    it := path.StartPath(handle.QuadStore, serviceName).Out(ServiceLinkPre).BuildIterator()
+    serviceTree = &ServiceTree{
+        ServiceList: serviceList,
+        RootNode: *rootNode,
+    }
+    return
+}
+
+//  getServiceListByNameList 根据服务名称获取所对应的服务信息
+//
+func getServiceListByNameList(serviceNameList []string, qs graph.QuadStore)(serviceList []Service, err error){
+    serviceList = make([]Service, 0)
+    if len(serviceNameList) == 0{
+        err = ServiceNameListIsNil
+        return
+    }
+    it := path.StartPath(qs, serviceNameList...).Out(ServiceInfoPre).BuildIterator()
+    for graph.Next(it){ // 循环获取所有的服务信息JSON
+        serviceJson := qs.NameOf(it.Result())
+        service := &Service{}
+        err = ffjson.Unmarshal([]byte(serviceJson), service)
+        if err != nil{
+            serviceList = make([]Service, 0)
+            return
+        }
+        serviceList = append(serviceList, *service)
+    }
+    return
+}
+
+//  GetServiceLinkTarget 获取所有被当前服务调用的g服务
+//
+func getServiceLinkTarget(serviceName string, qs graph.QuadStore, serviceLinkList []ServiceLink)([]ServiceLink){
+    it := path.StartPath(qs, serviceName).Out(ServiceLinkPre).BuildIterator()
     for graph.Next(it){
-        target := handle.QuadStore.NameOf(it.Result())
+        target := qs.NameOf(it.Result())
         serviceLink := &ServiceLink{
             Source: serviceName,
             Target: target,
         }
         serviceLinkList = append(serviceLinkList, *serviceLink)
     }
-    return
+
+    return serviceLinkList
 }
 
-//
 //  GetServiceLinkSource 获取所有调用当前服务的服务
 //
-func GetServiceLinkSource(serviceName string)(serviceLinkList []ServiceLink, err error){
-    if serviceName == ""{
-        err = errors.New("查询服务调用关系的服务名称不能为空")
-        return
-    }
-    handle, err := cayley.NewGraph("bolt", config.Bolt_DB_Path, nil)
-    if err != nil{
-        return
-    }
-    defer handle.Close()
-
-    serviceLinkList = make([]ServiceLink, 0)
-    it := path.StartPath(handle.QuadStore, serviceName).In(ServiceLinkPre).BuildIterator()
+func getServiceLinkSource(serviceName string, qs graph.QuadStore, serviceLinkList []ServiceLink)([]ServiceLink){
+    it := path.StartPath(qs, serviceName).In(ServiceLinkPre).BuildIterator()
     for graph.Next(it){
-        source := handle.QuadStore.NameOf(it.Result())
+        source := qs.NameOf(it.Result())
         serviceLink := &ServiceLink{
             Source: source,
             Target: serviceName,
         }
         serviceLinkList = append(serviceLinkList, *serviceLink)
     }
+
+    return serviceLinkList
+}
+
+// getServiceLinkTargetNode 获取该服务调用的服务/被调用该服务的服务列表
+// linkType:source=调用该服务;target=被该服务调用
+func getServiceLinkNode(serviceName string, qs graph.QuadStore, serviceNameMap map[string]string, linkType string)(linkNodeList []ServiceTreeNode){
+    serviceNameMap[serviceName] = serviceName
+    linkNodeList = make([]ServiceTreeNode, 0)
+    var it graph.Iterator
+    if linkType == "source"{
+        it = path.StartPath(qs, serviceName).In(ServiceLinkPre).BuildIterator()
+    }else if linkType == "target"{
+        it = path.StartPath(qs, serviceName).Out(ServiceLinkPre).BuildIterator()
+    }else{
+        return
+    }
+
+    for graph.Next(it){
+        targetServiceName := qs.NameOf(it.Result())
+        linkNode := &ServiceTreeNode{ServiceName: targetServiceName}
+        // 如果没有计算过子调用
+        if serviceNameMap[targetServiceName] == ""{
+            linkNode.LinkNodeList = getServiceLinkNode(targetServiceName, qs, serviceNameMap, linkType)
+        }
+
+        linkNodeList = append(linkNodeList, *linkNode)
+    }
     return
 }
 
-//
-//  GetServiceLinkBoth 获取所有被当前服务和调用当前服务的服务
-//
-func GetServiceLinkBoth(serviceName string)(serviceLinkList []ServiceLink, err error){
-    serviceLinkList = make([]ServiceLink, 0)
-
-    // 被该服务调用的服务
-    targetServiceLinks, err := GetServiceLinkTarget(serviceName)
-    if err != nil{
-        return
-    }else{
-        for _, targetServiceLink := range targetServiceLinks{
-            serviceLinkList = append(serviceLinkList, targetServiceLink)
-        }
-    }
-    // 调用该服务的服务
-    sourceServiceLinks, err := GetServiceLinkSource(serviceName)
-    if err != nil{
-        return
-    }else{
-        for _, sourceServiceLink := range sourceServiceLinks{
-            serviceLinkList = append(serviceLinkList, sourceServiceLink)
-        }
-    }
-
-    return
-}
-
-// convertServiceToQuads:将服务数据转化成,Quad切片
+// convertServiceToQuads:将服务数据转化成Quad列表
 func convertServiceToQuads(service Service)(quads []quad.Quad, err error){
     quads = make([]quad.Quad, 0)
     // 服务名称
@@ -281,7 +404,7 @@ func convertServiceToQuads(service Service)(quads []quad.Quad, err error){
 
     return
 }
-
+// convertServiceJsonToQuads:将服务数据转化成Quad列表
 func convertServiceJsonToQuads(serviceName string, serviceJson string)(quads []quad.Quad){
     quads = make([]quad.Quad, 0)
     // 服务名称
@@ -292,6 +415,19 @@ func convertServiceJsonToQuads(serviceName string, serviceJson string)(quads []q
     return
 }
 
+// checkServiceLink 校验服务调用关系
+// 调用方和被调用方不能为空
+func convertServiceLinkToQuad(serviceLink ServiceLink)(quad quad.Quad, err error){
+    if serviceLink.Source == ""{
+        err = errors.New("服务调用关系,调用服务名不能为空")
+    }else if serviceLink.Target == ""{
+        err = errors.New("服务调用关系,被调用服务名不能为空")
+    }else{
+        quad = cayley.Quad(serviceLink.Source, ServiceLinkPre, serviceLink.Target, "")
+    }
+
+    return
+}
 
 // checkService:检测Service数据是否合法
 // Service.Name, Service.Category不能为空
@@ -311,48 +447,6 @@ func getServiceJson(qs graph.QuadStore, serviceName string)(serviceJson string){
     it := path.StartPath(qs, serviceName).Out(ServiceInfoPre).BuildIterator()
     for graph.Next(it){
         serviceJson = qs.NameOf(it.Result())
-    }
-
-    return
-}
-// getServiceJson:获取所有服务的信息JSON
-//func getAllServiceJson(qs graph.QuadStore)(serviceJson string){
-//    it := path.StartPath(qs)
-//}
-
-// checkServiceLink 校验服务调用关系
-// 调用方和被调用方不能为空
-func convertServiceLinkToQuad(serviceLink ServiceLink)(quad quad.Quad, err error){
-    if serviceLink.Source == ""{
-        err = errors.New("服务调用关系,调用服务名不能为空")
-    }else if serviceLink.Target == ""{
-        err = errors.New("服务调用关系,被调用服务名不能为空")
-    }else{
-        quad = cayley.Quad(serviceLink.Source, ServiceLinkPre, serviceLink.Target, "")
-    }
-
-    return
-}
-
-// convertServiceLinkListToQuads
-// 调用方和被调用方列表不能为空
-func convertServiceLinkListToQuads(serviceLinkList ServiceLinkList)(quads []quad.Quad, err error){
-    if serviceLinkList.Source == ""{
-        err = errors.New("服务调用关系,调用服务名不能为空")
-    }else if(len(serviceLinkList.TargetList) == 0){
-        err = errors.New("服务调用关系,被调用服务名列表不能为空")
-    }else{
-        quads = make([]quad.Quad, 0)
-
-        targetList := serviceLinkList.TargetList
-        for _, target := range targetList{
-            if target == ""{
-                err = errors.New("服务调用关系,被调用服务名不能为空")
-                break
-            }else{
-                quads = append(quads, cayley.Quad(serviceLinkList.Source, ServiceLinkPre, target, ""))
-            }
-        }
     }
 
     return

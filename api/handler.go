@@ -4,6 +4,7 @@ import (
     "github.com/emicklei/go-restful"
     "chaos/dao"
     "net/http"
+    "strings"
 )
 
 type serviceHandler struct{
@@ -14,30 +15,39 @@ func NewServiceHandler() *serviceHandler{
 }
 
 func (handler *serviceHandler)findAllServices(request *restful.Request, response *restful.Response){
-
+    serviceList, err := dao.GetAllService()
+    if err != nil{
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+    response.WriteEntity(serviceList)
 }
 
 func (handler *serviceHandler)findService(request *restful.Request, response *restful.Response){
     serviceName := request.PathParameter("service-name")
     if serviceName == ""{
         response.WriteErrorString(http.StatusBadRequest, "服务名称不能为空")
+        return
     }
     service, err := dao.GetService(serviceName)
     if err != nil{
         response.WriteError(http.StatusInternalServerError, err)
+        return
     }
     response.WriteEntity(service)
 }
 
 func (handler *serviceHandler)createService(request *restful.Request, response *restful.Response){
-    service := dao.Service{Name: request.PathParameter("service-name")}
+    service := &dao.Service{Name: request.PathParameter("service-name")}
     err := request.ReadEntity(service)
     if err != nil{
         response.WriteError(http.StatusInternalServerError, err)
+        return
     }
-    err = dao.AddService(service, "ingore")
+    err = dao.AddService(*service, "replace")
     if err != nil{
         response.WriteError(http.StatusInternalServerError, err)
+        return
     }
     response.WriteHeader(http.StatusCreated)
 }
@@ -47,14 +57,16 @@ func (handler *serviceHandler)removeService(request *restful.Request, response *
 }
 
 func (handler *serviceHandler)createServiceLink(request *restful.Request, response *restful.Response){
-    serviceLink := dao.ServiceLink{}
+    serviceLink := &dao.ServiceLink{}
     err := request.ReadEntity(serviceLink)
     if err != nil{
         response.WriteError(http.StatusInternalServerError, err)
+        return
     }
-    err = dao.AddServiceLink(serviceLink)
+    err = dao.AddServiceLink(*serviceLink)
     if err != nil{
         response.WriteError(http.StatusInternalServerError, err)
+        return
     }
     response.WriteHeader(http.StatusCreated)
 }
@@ -64,48 +76,37 @@ func (handler *serviceHandler)findServiceLink(request *restful.Request, response
     linkType := request.QueryParameter("linkType")
     if serviceName == ""{
         response.WriteErrorString(http.StatusBadRequest, "服务名称不能为空")
+        return
+    }
+    if linkType == ""{
+        linkType = "both"
     }
 
-    // 已经查询过服务信息的服务
-    serviceMap := make(map[string]string)
-    // 服务信息
-    serviceList := make([]dao.Service, 0)
-    // 服务调用关系列表
-    serviceLinkList, err := getServiceLinkByType(serviceName, linkType)
+    serviceAndServiceLink, err := dao.GetServiceAndServiceLink(serviceName, strings.ToLower(linkType))
     if err != nil{
         response.WriteError(http.StatusInternalServerError, err)
+        return
     }
 
-    for _, serviceLink := range serviceLinkList{
-        // Source
-        serviceList = getServiceByName(serviceLink.Source, serviceMap, serviceList)
-        // Target
-        serviceList = getServiceByName(serviceLink.Target, serviceMap, serviceList)
-    }
-    serviceList = getServiceByName(serviceName, serviceMap, serviceList)
-
-    response.WriteEntity(&ServiceAndServiceLink{serviceList, serviceLinkList})
+    response.WriteEntity(serviceAndServiceLink)
 }
 
-func getServiceLinkByType(serviceName, linkType string)(serviceLinkList []dao.ServiceLink, err error){
-    if linkType == "source"{
-        serviceLinkList, err = dao.GetServiceLinkSource(serviceName)
-    }else if linkType == "target"{
-        serviceLinkList, err = dao.GetServiceLinkTarget(serviceName)
-    }else{
-        serviceLinkList, err = dao.GetServiceLinkBoth(serviceName)
+func (handler *serviceHandler)findServiceTree(request *restful.Request, response *restful.Response){
+    serviceName := request.PathParameter("service-name")
+    linkType := request.QueryParameter("linkType")
+    if serviceName == ""{
+        response.WriteErrorString(http.StatusBadRequest, "服务名称不能为空")
+        return
     }
-    return
-}
-
-func getServiceByName(servieName string, existServiceMap map[string]string, serviceList []dao.Service)([]dao.Service){
-    if existServiceMap[servieName] == ""{
-        service, err := dao.GetService(servieName)
-        if err == nil{
-            serviceList = append(serviceList, *service)
-            existServiceMap[servieName] = servieName
-        }
+    if linkType == ""{
+        linkType = "target"
     }
 
-    return serviceList
+    serviceTree, err := dao.GetServiceTree(serviceName, strings.ToLower(linkType))
+    if err != nil{
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+
+    response.WriteEntity(serviceTree)
 }

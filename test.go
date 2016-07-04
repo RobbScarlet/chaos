@@ -10,9 +10,14 @@ import (
 
 func main() {
     //initServiceAndLink()
-    fmt.Println(dao.GetServiceLinkSource("D"))
-    fmt.Println(dao.GetServiceLinkTarget("A"))
-    fmt.Println(dao.GetServiceLinkBoth("B"))
+    //fmt.Println(dao.GetServiceLinkSource("D"))
+    //fmt.Println(dao.GetServiceLinkTarget("A"))
+    //fmt.Println(dao.GetServiceLinkBoth("E"))
+
+    fmt.Println(dao.GetServiceTree("A", "target"))
+    //fmt.Println(dao.GetServiceTreeTarget("B"))
+    //fmt.Println(dao.GetServiceTreeTarget("E"))
+    //fmt.Println(dao.GetServiceTreeTarget("F"))
 }
 
 func initServiceAndLink(){
@@ -49,17 +54,33 @@ func initServiceAndLink(){
         Category: "Base",
         Description: "Service-F",
     }
-    ABEF := &dao.ServiceLinkList{
+    AB := &dao.ServiceLink{
         Source: "A",
-        TargetList: []string{"B", "E", "F"},
+        Target: "B",
     }
-    BCD := &dao.ServiceLinkList{
+    AE := &dao.ServiceLink{
+        Source: "A",
+        Target: "E",
+    }
+    AF := &dao.ServiceLink{
+        Source: "A",
+        Target: "F",
+    }
+    BC := &dao.ServiceLink{
         Source: "B",
-        TargetList: []string{"C", "D"},
+        Target: "C",
+    }
+    BD := &dao.ServiceLink{
+        Source: "B",
+        Target: "D",
     }
     ED := &dao.ServiceLink{
         Source: "E",
         Target: "D",
+    }
+    FB := &dao.ServiceLink{
+        Source: "F",
+        Target: "B",
     }
 
     fmt.Println(dao.AddService(*A, "ignore"))
@@ -68,7 +89,12 @@ func initServiceAndLink(){
     fmt.Println(dao.AddService(*D, "ignore"))
     fmt.Println(dao.AddService(*E, "ignore"))
     fmt.Println(dao.AddService(*F, "ignore"))
-    fmt.Println(dao.AddServiceLinkList(*ABEF))
-    fmt.Println(dao.AddServiceLinkList(*BCD))
+    fmt.Println(dao.AddServiceLink(*AB))
+    fmt.Println(dao.AddServiceLink(*AE))
+    fmt.Println(dao.AddServiceLink(*AF))
+    fmt.Println(dao.AddServiceLink(*BC))
+    fmt.Println(dao.AddServiceLink(*BD))
     fmt.Println(dao.AddServiceLink(*ED))
+    fmt.Println(dao.AddServiceLink(*FB))
+
 }

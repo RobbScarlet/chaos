@@ -41,12 +41,6 @@ type Service struct {
     LoomId          string              `json:"loomId,omitempty"`
 }
 //
-//  服务基本信息列表
-//
-type ServiceList struct{
-    serviceList     []Service           `json:"serviceList,omitempty"`
-}
-//
 //  服务的调用关系信息
 //
 type ServiceLink struct {
@@ -56,11 +50,29 @@ type ServiceLink struct {
     Target          string              `json:"target,omitempty"`
 }
 //
-//  服务的调用关系列表
+//  服务和服务的调用关系
 //
-type ServiceLinkList struct {
-    // 服务调用者名称
-    Source          string              `json:"source,omitempty"`
-    // 服务被调用者名称列表
-    TargetList      []string            `json:"targetList,omitempty"`
+type ServiceAndServiceLink struct {
+    // 调用关系中的所有服务
+    ServieList          []Service       `json:"servieList,omitempty"`
+    // 所有的调用关系
+    ServiceLinkList     []ServiceLink   `json:"serviceLinkList,omitempty"`
+}
+//
+//  服务调用关系树节点
+//
+type ServiceTreeNode struct {
+    // 服务名称(唯一性)
+    ServiceName     string              `json:"serviceName,omitempty"`
+    // 和该服务有关系的节点
+    LinkNodeList    []ServiceTreeNode   `json:"linkNode,omitempty"`
+}
+//
+//  服务调用关系树
+//
+type ServiceTree struct {
+    // 关系树中的所有服务
+    ServiceList     []Service           `json:"serviceList,omitempty"`
+    // 关系树的根节点
+    RootNode        ServiceTreeNode     `json:"nodeList,omitempty"`
 }
