@@ -210,6 +210,9 @@ func GetServiceLink(serviceName, linkType string)(serviceLinkList []ServiceLink,
     return
 }
 
+//
+//  GetServiceAndServiceLink 获取服务的信息和服务的调用关系
+//  linkType:source=调用该服务的所有服务,target=该服务调用的所有服务,both=source+target
 func GetServiceAndServiceLink(serviceName, linkType string)(serviceAndServiceLink *ServiceAndServiceLink, err error){
     serviceNameList := make([]string, 0)
     serviceNameMap := make(map[string]string)

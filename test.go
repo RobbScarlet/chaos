@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
     _ "github.com/google/cayley/graph/bolt"
     "github.com/google/cayley/graph"
@@ -97,4 +98,4 @@ func initServiceAndLink(){
     fmt.Println(dao.AddServiceLink(*ED))
     fmt.Println(dao.AddServiceLink(*FB))
 
-}
+}*/

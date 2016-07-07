@@ -32,7 +32,7 @@ func main() {
 	//}
 	//swagger.RegisterSwaggerService(config, container)
 
-	log.Printf("start listening on localhost:8888")
-	server := &http.Server{Addr: ":8888", Handler: container}
+	log.Printf("start listening on localhost:8787")
+	server := &http.Server{Addr: ":8787", Handler: container}
 	log.Fatal(server.ListenAndServe())
 }
