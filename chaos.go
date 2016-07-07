@@ -4,7 +4,7 @@ import (
 	"chaos/api"
 	"chaos/config"
 	"github.com/emicklei/go-restful"
-	"github.com/google/cayley/graph"
+	"github.com/cayleygraph/cayley/graph"
 	"log"
 	"net/http"
 )

@@ -1,15 +1,15 @@
 package dao
 
 import (
-    "github.com/google/cayley"
-    "github.com/google/cayley/quad"
+    "github.com/cayleygraph/cayley"
+    "github.com/cayleygraph/cayley/quad"
     "errors"
     "strings"
     "chaos/config"
-    _ "github.com/google/cayley/graph/bolt"
-    "github.com/google/cayley/graph/path"
+    _ "github.com/cayleygraph/cayley/graph/bolt"
+    "github.com/cayleygraph/cayley/graph/path"
     "github.com/pquerna/ffjson/ffjson"
-    "github.com/google/cayley/graph"
+    "github.com/cayleygraph/cayley/graph"
 )
 
 //
