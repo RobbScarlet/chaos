@@ -1,0 +1,100 @@
+{
+	"ImportPath": "chaos",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/boltdb/bolt",
+			"Comment": "v1.0-111-g04a3e85",
+			"Rev": "04a3e85793043e76d41164037d0d7f9d53eecae3"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/clog",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/graph",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/graph/bolt",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/graph/iterator",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/graph/memstore",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/graph/memstore/b",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/graph/path",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/graph/proto",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/quad",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/cayleygraph/cayley/writer",
+			"Comment": "v0.5.0-47-g67b6ef6",
+			"Rev": "67b6ef6938749e451889c141a4fabc7c36fda6e9"
+		},
+		{
+			"ImportPath": "github.com/emicklei/go-restful",
+			"Comment": "v1.2",
+			"Rev": "777bb3f19bcafe2575ffb2a3e46af92509ae9594"
+		},
+		{
+			"ImportPath": "github.com/emicklei/go-restful/log",
+			"Comment": "v1.2",
+			"Rev": "777bb3f19bcafe2575ffb2a3e46af92509ae9594"
+		},
+		{
+			"ImportPath": "github.com/gogo/protobuf/proto",
+			"Rev": "58bbd41c1a2d1b7154f5d99a8d0d839b3093301a"
+		},
+		{
+			"ImportPath": "github.com/pborman/uuid",
+			"Rev": "ca53cad383cad2479bbba7f7a1a05797ec1386e4"
+		},
+		{
+			"ImportPath": "github.com/pquerna/ffjson/ffjson",
+			"Rev": "a16f62ecdaf7d13077d64d3cdb1cc43486119809"
+		},
+		{
+			"ImportPath": "github.com/pquerna/ffjson/fflib/v1",
+			"Rev": "a16f62ecdaf7d13077d64d3cdb1cc43486119809"
+		},
+		{
+			"ImportPath": "github.com/pquerna/ffjson/fflib/v1/internal",
+			"Rev": "a16f62ecdaf7d13077d64d3cdb1cc43486119809"
+		}
+	]
+}
