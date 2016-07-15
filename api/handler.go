@@ -5,6 +5,7 @@ import (
     "chaos/dao"
     "net/http"
     "strings"
+    "fmt"
 )
 
 type serviceHandler struct{
@@ -37,15 +38,47 @@ func (handler *serviceHandler)findService(request *restful.Request, response *re
     response.WriteEntity(service)
 }
 
+func (handler *serviceHandler)findAllServiceNames(request *restful.Request, response *restful.Response){
+    serviceList, err := dao.GetAllService()
+    if err != nil{
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+
+    serviceNameList := make([]string, 0)
+    for _, service := range serviceList {
+        serviceNameList = append(serviceNameList, service.Name)
+    }
+    response.WriteEntity(serviceNameList)
+}
+
+func (handler *serviceHandler)findServiceByGitIds(request *restful.Request, response *restful.Response){
+    gitIdList := request.QueryParameter("gitIdList")
+    if gitIdList == ""{
+        response.WriteErrorString(http.StatusBadRequest, "git Id列表不能为空")
+        return
+    }
+    gitIds := strings.Split(gitIdList, "|")
+    serviceList, err := dao.GetServiceListByGitId(gitIds)
+    if err != nil{
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+
+    response.WriteEntity(serviceList)
+}
+
 func (handler *serviceHandler)createService(request *restful.Request, response *restful.Response){
     service := &dao.Service{Name: request.PathParameter("service-name")}
     err := request.ReadEntity(service)
     if err != nil{
+        fmt.Printf("try create service but return error:%v", err)
         response.WriteError(http.StatusInternalServerError, err)
         return
     }
     err = dao.AddService(*service, "replace")
     if err != nil{
+        fmt.Printf("try create service but return error:%v", err)
         response.WriteError(http.StatusInternalServerError, err)
         return
     }
@@ -91,6 +124,29 @@ func (handler *serviceHandler)findServiceLink(request *restful.Request, response
     response.WriteEntity(serviceAndServiceLink)
 }
 
+func (handler *serviceHandler)findServiceListLink(request *restful.Request, response *restful.Response){
+    serviceNameList := strings.Split(request.QueryParameter("serviceList"), "|")
+    if len(serviceNameList) == 0 {
+        response.WriteErrorString(http.StatusBadRequest, "服务名称列表不能为空")
+        return
+    }
+    // serviceList
+    serviceList, err := dao.GetServiceList(serviceNameList)
+    if err != nil{
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+    // serviceLinkList
+    serviceLinkList, err := dao.GetServiceListEachLink(serviceNameList)
+    if err != nil{
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+    serviceAndServiceLink := &dao.ServiceAndServiceLink{serviceList, serviceLinkList}
+
+    response.WriteEntity(serviceAndServiceLink)
+}
+
 func (handler *serviceHandler)findServiceTree(request *restful.Request, response *restful.Response){
     serviceName := request.PathParameter("service-name")
     linkType := request.QueryParameter("linkType")
@@ -109,4 +165,8 @@ func (handler *serviceHandler)findServiceTree(request *restful.Request, response
     }
 
     response.WriteEntity(serviceTree)
+}
+
+func (handler *serviceHandler)findServiceListTree(request *restful.Request, response *restful.Response){
+
 }
