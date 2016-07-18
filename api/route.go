@@ -90,9 +90,9 @@ func Register(container *restful.Container) (err error) {
         // 查询关系类型:source为递归查询父, target为递归查询子,默认target
         Param(ws.QueryParameter("linkType", "service link type('source', 'target'), default is 'target'").DataType("string")).
         // 查询保留的递归服务的类型,'http', 'thrift'等,多个以'|'分隔
-        Param(ws.QueryParameter("serviceType", "default is all, the value could be 'http', 'thrift' and so on, more use '|' split").DataType("string")).
+        Param(ws.QueryParameter("serviceType", "default is 'all', the value could be 'http', 'thrift' and so on, more use '|' split").DataType("string")).
         // 查询保留的递归服务的种类,'base'和'application',不传的话则为保留所有
-        Param(ws.QueryParameter("serviceCategory", "default is all, the value could be 'base' or 'application'").DataType("string")).
+        Param(ws.QueryParameter("serviceCategory", "default is 'all', the value could be 'base' or 'application'").DataType("string")).
         Writes(dao.ServiceListTree{}),
     )
 

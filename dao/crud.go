@@ -364,6 +364,42 @@ func GetServiceTree(serviceName, linkType string) (serviceTree *ServiceTree, err
 	return
 }
 
+func GetServiceListTree(serviceNameList []string, linkType, serviceType, serviceCategory string)(serviceListTree *ServiceListTree, err error){
+	handle, err := cayley.NewGraph("bolt", config.Bolt_DB_Path, nil)
+	if err != nil {
+		return
+	}
+	defer handle.Close()
+
+	rootNodeList := make([]ServiceTreeNode, 0)
+
+	allServiceNameMap := make(map[string]string)
+	allserviceNameList := make([]string, 0)
+	for _, serviceName := range serviceNameList {
+		// 根节点调用信息
+		rootNode := &ServiceTreeNode{ServiceName: serviceName}
+		// 树形调用结构中的所有服务
+		serviceNameMap := make(map[string]string)
+		serviceNameMap[serviceName] = "yes"
+		// 子调用
+		rootNode.LinkNodeList = getServiceLinkNodeWithTypeCategory(handle.QuadStore, serviceNameMap, serviceName, linkType, serviceType, serviceCategory)
+		for k, v := range serviceNameMap{
+			if allServiceNameMap[k] == "" && v == "yes"{
+				allServiceNameMap[k] = k
+				allserviceNameList = append(allserviceNameList, k)
+			}
+		}
+		rootNodeList = append(rootNodeList, *rootNode)
+	}
+	serviceList, err := getServiceListByNameList(allserviceNameList, handle.QuadStore)
+	if err != nil {
+		return
+	}
+
+	serviceListTree = &ServiceListTree{serviceList, rootNodeList}
+	return
+}
+
 //  getServiceListByNameList 根据服务名称获取所对应的服务信息
 //
 func getServiceListByNameList(serviceNameList []string, qs graph.QuadStore) (serviceList []Service, err error) {
@@ -477,6 +513,59 @@ func getServiceLinkNode(serviceName string, qs graph.QuadStore, serviceNameMap m
 		}
 
 		linkNodeList = append(linkNodeList, *linkNode)
+	}
+	return
+}
+
+func getServiceLinkNodeWithTypeCategory(qs graph.QuadStore, serviceNameMap map[string]string, serviceName, linkType, serviceType, category string) (linkNodeList []ServiceTreeNode) {
+	linkNodeList = make([]ServiceTreeNode, 0)
+	var it graph.Iterator
+	if linkType == "source" {
+		it = path.StartPath(qs, serviceName).In(ServiceLinkPre).Out(ServiceInfoPre).BuildIterator()
+	} else if linkType == "target" {
+		it = path.StartPath(qs, serviceName).Out(ServiceLinkPre).Out(ServiceInfoPre).BuildIterator()
+	} else {
+		return
+	}
+
+	for graph.Next(it) {
+		serviceJson := qs.NameOf(it.Result())
+		service := &Service{}
+		err := ffjson.Unmarshal([]byte(serviceJson), service)
+		if err != nil {
+			return
+		}
+
+		if (serviceType == "all" || strings.ToLower(service.Type) == serviceType) &&
+		   (category == "all" || strings.ToLower(service.Category) == category){
+			// 需要计算基本信息
+			linkNode := &ServiceTreeNode{ServiceName: service.Name}
+			// 如果没有计算过子调用
+			if serviceNameMap[service.Name] == "" {
+				serviceNameMap[service.Name] = "yes"
+				linkNode.LinkNodeList = getServiceLinkNodeWithTypeCategory(qs, serviceNameMap, service.Name, linkType, serviceType, category)
+			}
+			linkNodeList = append(linkNodeList, *linkNode)
+		}else{
+			if serviceNameMap[service.Name] == "" {
+				// 无需计算基本信息
+				serviceNameMap[service.Name] = "no"
+				newLinkNodeList := getServiceLinkNodeWithTypeCategory(qs, serviceNameMap, service.Name, linkType, serviceType, category)
+				for _, newLinkNode := range newLinkNodeList{
+					isLinkExist := false
+					for _, link := range linkNodeList{
+						if newLinkNode.ServiceName == link.ServiceName {
+							isLinkExist = true
+							break
+						}
+					}
+					if !isLinkExist {
+						linkNodeList = append(linkNodeList, newLinkNode)
+					}
+				}
+			}
+		}
+
 	}
 	return
 }

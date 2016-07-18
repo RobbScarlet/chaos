@@ -168,5 +168,29 @@ func (handler *serviceHandler)findServiceTree(request *restful.Request, response
 }
 
 func (handler *serviceHandler)findServiceListTree(request *restful.Request, response *restful.Response){
+    serviceNames := request.QueryParameter("serviceList")
+    linkType := strings.ToLower(request.QueryParameter("linkType"))
+    serviceType := strings.ToLower(request.QueryParameter("serviceType"))
+    serviceCategory := strings.ToLower(request.QueryParameter("serviceCategory"))
+    if serviceNames == ""{
+        response.WriteErrorString(http.StatusBadRequest, "服务名称列表不能为空")
+        return
+    }
+    if linkType == "" {
+        linkType = "target"
+    }
+    if serviceType == "" {
+        serviceType = "all"
+    }
+    if serviceCategory == "" {
+        serviceCategory = "all"
+    }
 
+    serviceListTree, err := dao.GetServiceListTree(strings.Split(serviceNames, "|"), linkType, serviceType, serviceCategory)
+    if err != nil{
+        response.WriteError(http.StatusInternalServerError, err)
+        return
+    }
+
+    response.WriteEntity(serviceListTree)
 }
